@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog</title>
+    <link rel="stylesheet" href="sty1.css">
+    <script defer src="blog.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Blog - Conseils & Tourisme au Bénin</h1>
+        <button class="menu-toggle">☰ Menu</button>
+        <nav>
+            <ul>
+                <li><a href="cahier1.html"class="acc">Accueil</a></li>
+                <li><a href="chambres.html"class="acc">Chambres à Louer</a></li>
+                <li><a href="gesthourse.html" class="acc">Guest Houses</a></li>
+                <li><a href="reservations.html" class="acc">Réserver</a></li>
+                <li><a href="dashboard.html"class="acc">Espace Utilisateur</a></li>
+                <li><a href="blog.html" class="ac">Blog</a></li>
+                <li><a href="about.html" class="acc">À propos</a></li>
+                <li><a href="contact.html"class="acc">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <section class="articles">
+            <article class="post">
+                <h2>Les meilleurs endroits à visiter au Bénin</h2>
+                <p>Découvrez les sites incontournables du Bénin, de la Route des Pêches à Ouidah...</p>
+                <button class="read-more">Lire la suite</button>
+            </article>
+
+            <article class="post">
+                <h2>Conseils pour un séjour réussi</h2>
+                <p>Voici nos conseils pour une expérience inoubliable lors de votre voyage...</p>
+                <button class="read-more">Lire la suite</button>
+            </article>
+        </section>
+        
+        <section class="comments">
+            <h2>Commentaires</h2>
+            <ul id="commentList">
+                <li>Aucun commentaire pour le moment.</li>
+            </ul>
+            <form id="commentForm">
+                <label for="comment">Votre commentaire :</label>
+                <textarea id="comment" required></textarea>
+                <button type="submit">Envoyer</button>
+            </form>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Location de Chambres & Guest Houses au Bénin</p>
+    </footer>
+</body>
+</html>

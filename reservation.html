@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Réservations</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .user-info {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        .user-info h2 {
+            color: #333;
+            margin-top: 0;
+        }
+        .user-info p {
+            margin: 5px 0;
+        }
+        .reservation-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        .reservation-card h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .reservation-info {
+            margin: 10px 0;
+        }
+        .reservation-info p {
+            margin: 5px 0;
+        }
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        .back-button:hover {
+            background-color: #45a049;
+        }
+        .no-reservations {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <button id="logoutButton" class="logout-button">Déconnexion</button>
+    <div class="container">
+        <h1>Mes Réservations</h1>
+        <button id="backButton" class="back-button">Retour aux chambres</button>
+
+        <!-- Section pour les informations utilisateur -->
+        <div id="user-info" class="user-info">
+            <!-- Les informations utilisateur seront affichées ici dynamiquement -->
+        </div>
+
+        <div id="reservations-container">
+            <!-- Les réservations seront affichées ici dynamiquement -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si l'utilisateur est connecté
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Afficher les informations utilisateur
+            const userInfoContainer = document.getElementById('user-info');
+            userInfoContainer.innerHTML = `
+                <h2>Informations de l'utilisateur</h2>
+                <p><strong>Nom :</strong> ${currentUser.nom || 'Non spécifié'}</p>
+                <p><strong>Prénom :</strong> ${currentUser.prenom || 'Non spécifié'}</p>
+                <p><strong>Âge :</strong> ${currentUser.age || 'Non spécifié'}</p>
+                <p><strong>Profession :</strong> ${currentUser.profession || 'Non spécifié'}</p>
+                <p><strong>Téléphone :</strong> ${currentUser.telephone || currentUser.phone || 'Non spécifié'}</p>
+                <p><strong>Email :</strong> ${currentUser.email || 'Non spécifié'}</p>`;
+
+            const container = document.getElementById('reservations-container');
+            const backButton = document.getElementById('backButton');
+            
+            // Récupérer les réservations de Chambres
+            const reservations = JSON.parse(localStorage.getItem('permanentReservations') || '{}');
+            let reservationList = Object.entries(reservations).map(([roomId, reservation]) => ({
+                roomId,
+                ...reservation
+            }));
+            
+            // Filtrer les réservations expirées
+            const now = new Date();
+            reservationList = reservationList.filter(reservation => {
+                const checkOutDate = new Date(reservation.checkOut);
+                return checkOutDate > now;
+            });
+
+            // Trier les réservations par date d'arrivée
+            reservationList.sort((a, b) => new Date(a.checkIn) - new Date(b.checkIn));
+
+            if (reservationList.length === 0) {
+                container.innerHTML = `
+                    <div class="no-reservations">
+                        <h2>Aucune réservation trouvée</h2>
+                        <p>Vous n'avez pas encore effectué de réservation pour les chambres.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Afficher chaque réservation avec un titre numéroté
+            reservationList.forEach((reservation, index) => {
+                const card = document.createElement('div');
+                card.className = 'reservation-card';
+
+                const checkInDate = new Date(reservation.checkIn);
+                const checkOutDate = new Date(reservation.checkOut);
+
+                card.innerHTML = `
+                    <h3>Réservation ${index + 1}: Chambre ${reservation.roomId}</h3>
+                    <div class="reservation-info">
+                        <p><strong>Nom:</strong> ${reservation.guestName || currentUser.nom || 'Non spécifié'}</p>
+                        <p><strong>Email:</strong> ${reservation.email || currentUser.email || 'Non spécifié'}</p>
+                        <p><strong>Activité:</strong> ${reservation.activity || currentUser.profession || 'Non spécifié'}</p>
+                        <p><strong>Date d'arrivée:</strong> ${checkInDate.toLocaleString()}</p>
+                        <p><strong>Date de départ:</strong> ${checkOutDate.toLocaleString()}</p>
+                        <p><strong>Durée:</strong> ${reservation.durationValue} ${reservation.durationType === 'hours' ? 'heures' : 'jours'}</p>
+                        <p><strong>Méthode de paiement:</strong> ${reservation.paymentMethod}</p>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            // Gestion du bouton retour
+            backButton.addEventListener('click', function() {
+                const lastReservation = reservationList[reservationList.length - 1];
+                if (lastReservation) {
+                    localStorage.setItem('tempReservation', JSON.stringify(lastReservation));
+                    window.location.href = `chambres.html?highlight=${lastReservation.roomId}&container=${lastReservation.containerId}`;
+                } else {
+                    window.location.href = 'chambres.html';
+                }
+            });
+
+            // Gestion de la déconnexion
+            const logoutButton = document.getElementById('logoutButton');
+            logoutButton.addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

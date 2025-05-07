@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservation de Chambre</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f8f4e1 0%, #e8e4d1 100%);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            padding: 25px;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        main {
+            padding: 30px;
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .room-info, .reservation-form {
+            margin-bottom: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .room-info:hover, .reservation-form:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: block;
+            transition: color 0.3s ease;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        input:focus, select:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+            outline: none;
+        }
+
+        button {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .hidden {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .hidden.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            background: none;
+            border: none;
+            transition: transform 0.3s ease;
+        }
+
+        .close-btn:hover {
+            transform: rotate(90deg);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+        }
+
+        .back-btn:hover {
+            transform: translateX(-5px);
+        }
+
+        .payment-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .payment-icon {
+            width: 50px;
+            height: 30px;
+            object-fit: contain;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+
+        .payment-icon.active {
+            opacity: 1;
+        }
+
+        .error-message {
+            color: #ff4444;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .form-group.error .error-message {
+            display: block;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        .spinner {
+            display: none;
+            width: 40px;
+            height: 40px;
+            margin: 20px auto;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="spinner" id="loading-spinner"></div>
+    <header>
+        <h1>Réservation de Chambre</h1>
+        <button class="close-btn">&times;</button>
+    </header>
+
+    <main id="reservation-form">
+        <section class="room-info">
+            <h2>Détails de la Chambre</h2>
+            <p><strong>Numéro :</strong> <span id="roomNumber"></span></p>
+            <p><strong>Prix :</strong> <span id="roomPrice"></span> FCFA</p>
+            <p><strong>Informations :</strong> <span id="roomDetails"></span></p>
+        </section>
+        
+        <section class="reservation-form">
+            <h2>Informations de Réservation</h2>
+            <div id="verification-status" class="hidden">
+                <p>Un email de vérification a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception.</p>
+            </div>
+          
+            <form id="booking-form">
+                <div class="form-group">
+                    <label for="full-name">Nom complet :</label>
+                    <input type="text" id="full-name" required>
+                    <div class="error-message">Veuillez entrer votre nom complet</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email :</label>
+                    <input type="email" id="email" required>
+                    <div class="error-message">Veuillez entrer une adresse email valide</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="activity">Activité/Profession :</label>
+                    <input type="text" id="activity" name="activity" required>
+                    <div class="error-message">Ce champ est requis</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="durationType">Durée de séjour :</label>
+                    <select id="durationType" name="durationType" required>
+                        <option value="">Choisir...</option>
+                        <option value="hours">Heures</option>
+                        <option value="days">Jours</option>
+                    </select>
+                    <div class="error-message">Veuillez sélectionner une durée</div>
+                </div>
+                
+                <div id="durationHoursGroup" class="form-group hidden">
+                    <label for="durationHours">Nombre d'heures :</label>
+                    <input type="number" id="durationHours" name="durationHours" min="1" max="23">
+                    <div class="error-message">Veuillez entrer un nombre d'heures valide (1-23)</div>
+                </div>
+                
+                <div id="durationDaysGroup" class="form-group hidden">
+                    <label for="durationDays">Nombre de jours :</label>
+                    <input type="number" id="durationDays" name="durationDays" min="1">
+                    <div class="error-message">Veuillez entrer un nombre de jours valide</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkin">Date et heure d'arrivée :</label>
+                    <input type="datetime-local" id="checkin" name="checkin" required>
+                    <div class="error-message">Veuillez sélectionner une date d'arrivée</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkout">Date et heure de départ :</label>
+                    <input type="datetime-local" id="checkout" name="checkout" required>
+                    <div class="error-message">Veuillez sélectionner une date de départ</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="uploadDocument">Document d'identité :</label>
+                    <input type="file" id="uploadDocument" name="uploadDocument" accept=".pdf,.jpg,.jpeg,.png" required>
+                    <div class="error-message">Veuillez télécharger un document valide</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentMethod">Méthode de paiement :</label>
+                    <select id="paymentMethod" name="paymentMethod" required>
+                        <option value="">Choisir...</option>
+                        <option value="card">Carte bancaire</option>
+                        <option value="mobile">Mobile Money</option>
+                        <option value="paypal">PayPal</option>
+                    </select>
+                    <div class="payment-icons">
+                        <img src="visa.png" alt="Visa" class="payment-icon" data-method="card">
+                        <img src="mastercard.png" alt="Mastercard" class="payment-icon" data-method="card">
+                        <img src="mtn.png" alt="MTN Mobile Money" class="payment-icon" data-method="mobile">
+                        <img src="moov.png" alt="Moov Money" class="payment-icon" data-method="mobile">
+                        <img src="paypal.png" alt="PayPal" class="payment-icon" data-method="paypal">
+                    </div>
+                    <div class="error-message">Veuillez sélectionner une méthode de paiement</div>
+                </div>
+                
+                <div id="card-element" class="form-group hidden">
+                    <!-- Stripe Card Element will be inserted here -->
+                    <div class="error-message" id="card-errors"></div>
+                </div>
+
+                <div id="mobile-money-form" class="form-group hidden">
+                    <label for="phone">Numéro de téléphone :</label>
+                    <input type="tel" id="phone" pattern="[0-9]{8,}" placeholder="Ex: 97000000">
+                    <div class="error-message">Veuillez entrer un numéro de téléphone valide</div>
+                </div>
+
+                <button type="submit" id="submit-button">
+                    <span class="button-text">Valider la réservation</span>
+                    <div class="spinner hidden"></div>
+                </button>
+            </form>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Location de Chambres au Bénin</p>
+    </footer>
+
+    <script src="reservs.js"></script>
+</body>
+</html>

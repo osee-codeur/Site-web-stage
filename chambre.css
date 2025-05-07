@@ -1,0 +1,346 @@
+/* Style général */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f4e1;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+}
+
+header {
+    background-color: #7e5e3f;
+    padding: 20px;
+    text-align: center;
+    color: rgb(144, 231, 30);
+}
+nav ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap; /* Permet de passer à la ligne si nécessaire */
+    
+}
+nav ul li {
+    display: inline-block;
+    padding: 1.8%;
+    
+}
+nav ul li a {
+    text-decoration: none;
+    color: rgb(209, 186, 228);
+    font-weight: bold;
+}
+.acc{
+    
+    padding: 0px;
+}
+.acc:hover {
+    background-color: red;
+    transform: scale(1.1);
+    border-radius: 5px;
+    height: 20px;
+    padding: 10px;
+}
+
+nav ul li:hover a {
+    color: yellow;
+    font-size: 20px;
+}
+.ac {
+    margin-top: -15px;
+    position: relative;
+    display: inline-block;
+    padding: 10px;
+    color: yellow;
+    text-decoration: none;
+   
+    overflow: hidden; /* Empêche le débordement de l'animation */
+}
+
+.ac::after {
+    content: "";
+    position: absolute;
+    left: -100%; /* Commence hors du cadre à gauche */
+    bottom: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(to right, transparent, red, transparent);
+    animation: borderMove 2s linear infinite;
+}
+
+@keyframes borderMove {
+    0% {
+        left: -100%; /* Départ hors du cadre */
+    }
+    100% {
+        left: 100%; /* Sortie complète à droite */
+    }
+}
+/* Styles pour le bouton de menu hamburger */
+.menu-toggle {
+    display: none;
+    background-color: #7e5e3f;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+/* Styles pour la nav-bar en mode mobile */
+@media (max-width: 768px) {
+    nav ul {
+        display: none;
+        flex-direction: column;
+        align-items: flex-start;
+        background-color: #7e5e3f;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        padding: 10px;
+        z-index: 1000;
+    }
+
+    nav ul li {
+        display: block;
+        width: 100%;
+        text-align: left;
+    }
+
+    nav ul li a {
+        padding: 10px;
+        display: block;
+        color: white;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    nav ul.active {
+        display: flex;
+    }
+}
+.room-category {
+    margin: 20px auto;
+    width: 80%;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.room-list {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.room-card {
+    width: 250px;
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    margin: 10px;
+    position: relative;
+}
+
+.room-card img {
+    width: 100%;
+    border-radius: 8px;
+}
+
+.occupied {
+    background: red;
+    color: white;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+button {
+    background-color: #d4a373;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #b98560;
+}
+
+/* Modale de réservation */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 400px;
+    text-align: center;
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+/*Pour les défilements*/
+.room-container {
+    
+    position: relative;
+    width: 300px;
+    overflow: hidden;
+}
+.room-carousel {
+    text-align: center;
+    display: flex;
+    transition: transform 0.5s ease-in-out;
+}
+.room-card {
+    min-width: 260px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    text-align: center;
+    
+}
+.room-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+}
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: rgba(0, 0, 0, 0.5);
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    z-index: 10;
+}
+.prev-btn { left: 0; }
+.next-btn { right: 0; }
+/*Affichage de reservation*/
+.reservation-info {
+    background-color: #f8f8f8;
+    border-left: 4px solid #d32f2f;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 4px;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.reservation-info p {
+    margin: 6px 0;
+    font-size: 0.9em;
+}
+
+.reservation-info strong {
+    color: #d32f2f;
+}
+
+.countdown {
+    font-weight: bold;
+}
+
+.countdown.urgent {
+    animation: pulse 1s infinite;
+}
+
+#time-left-1{ color: red;}
+        
+        /* Styles pour le filtre de prix */
+        .filter-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .filter-container label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .filter-container input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
+            width: 120px;
+        }
+        
+        .filter-container button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .filter-container button:hover {
+            background-color: #45a049;
+        }
+        
+        .filter-container button.reset {
+            background-color: #f44336;
+            margin-left: 10px;
+        }
+        
+        .filter-container button.reset:hover {
+            background-color: #d32f2f;
+        }
+        
+        /* Style pour les chambres filtrées/masquées */
+        .room-container.hidden {
+            display: none;
+        }
+
+.choose-room[disabled] {
+    background-color: #e0e0e0 !important;
+    color: #666 !important;
+    cursor: not-allowed;
+    border-color: #ccc !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}

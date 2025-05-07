@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservation</title>
+    <link rel="stylesheet" href="sty1.css">
+    <style>
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .hidden {
+            display: none;
+        }
+        .available-rooms {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .room-card {
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .room-card:hover {
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .room-card.selected {
+            border-color: #4CAF50;
+            background-color: #f8fff8;
+        }
+        .reservation-info {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Réserver une Chambre ou Guest House</h1>
+        <nav>
+            <ul>
+                <li><a href="cahier1.html" class="acc">Accueil</a></li>
+                <li><a href="chambres.html" class="acc">Chambres à Louer</a></li>
+                <li><a href="gesthourse.html" class="acc">Guest Houses</a></li>
+                <li><a href="reservation.html" class="ac">Réserver</a></li>
+                <li><a href="blog.html" class="acc">Blog</a></li>
+                <li><a href="about.html" class="acc">À propos</a></li>
+                <li><a href="contact.html" class="acc">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <form id="bookingForm">
+            <!-- Section 1: Informations personnelles -->
+            <section class="form-section">
+                <h2>Informations Personnelles</h2>
+                
+                <div class="form-group">
+                    <label for="fullName">Nom Complet :</label>
+                    <input type="text" id="fullName" name="fullName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email :</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="profession">Activité/Profession :</label>
+                    <input type="text" id="profession" name="profession" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="durationType">Durée de séjour :</label>
+                    <select id="durationType" name="durationType" required>
+                        <option value="">Choisir...</option>
+                        <option value="hours">Heures</option>
+                        <option value="days">Jours</option>
+                    </select>
+                </div>
+                
+                <div id="durationHoursGroup" class="form-group hidden">
+                    <label for="durationHours">Nombre d'heures :</label>
+                    <input type="number" id="durationHours" name="durationHours" min="1" max="23">
+                </div>
+                
+                <div id="durationDaysGroup" class="form-group hidden">
+                    <label for="durationDays">Nombre de jours :</label>
+                    <input type="number" id="durationDays" name="durationDays" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkin">Date et heure d'arrivée :</label>
+                    <input type="datetime-local" id="checkin" name="checkin" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkout">Date et heure de départ :</label>
+                    <input type="datetime-local" id="checkout" name="checkout" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentMethod">Méthode de paiement :</label>
+                    <select id="paymentMethod" name="paymentMethod" required>
+                        <option value="">Choisir...</option>
+                        <option value="credit">Carte de crédit</option>
+                        <option value="debit">Carte bancaire</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="mobile">Mobile Money</option>
+                    </select>
+                </div>
+                
+                <div id="cardNumberGroup" class="form-group hidden">
+                    <label for="cardNumber">Numéro de carte :</label>
+                    <input type="text" id="cardNumber" name="cardNumber" pattern="[0-9]{13,16}">
+                </div>
+            </section>
+
+            <!-- Section 2: Choix d'hébergement -->
+            <section class="form-section">
+                <h2>Choix d'Hébergement</h2>
+                
+                <div class="form-group">
+                    <label for="accommodationType">Type d'hébergement :</label>
+                    <select id="accommodationType" name="accommodationType" required>
+                        <option value="">Choisir...</option>
+                        <option value="room">Chambre</option>
+                        <option value="guesthouse">Guest House</option>
+                    </select>
+                </div>
+                
+                <!-- Options pour les chambres -->
+                <div id="roomOptions" class="hidden">
+                    <div class="form-group">
+                        <label>Catégorie de prix :</label>
+                        <div class="price-options">
+                            <label><input type="radio" name="roomPrice" value="20000"> Moins de 20 000 FCFA</label>
+                            <label><input type="radio" name="roomPrice" value="40000"> 20 000 - 40 000 FCFA</label>
+                            <label><input type="radio" name="roomPrice" value="40000+"> Plus de 40 000 FCFA</label>
+                        </div>
+                    </div>
+                    
+                    <div id="availableRooms" class="available-rooms hidden">
+                        <!-- Les chambres disponibles seront chargées ici dynamiquement -->
+                    </div>
+                </div>
+                
+                <!-- Options pour les guest houses -->
+                <div id="guesthouseOptions" class="hidden">
+                    <div id="availableGuestHouses" class="available-rooms hidden">
+                        <!-- Les guest houses disponibles seront chargées ici dynamiquement -->
+                    </div>
+                </div>
+                
+                <div id="selectedAccommodationInfo" class="hidden">
+                    <h3>Détails de votre sélection</h3>
+                    <div id="accommodationDetails"></div>
+                </div>
+            </section>
+
+            <button type="submit" class="submit-btn">Réserver</button>
+        </form>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Location de Chambres & Guest Houses au Bénin</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Stockage des réservations existantes
+            let existingReservations = JSON.parse(localStorage.getItem('permanentReservations')) || {};
+            
+            // Gestion de la durée de séjour
+            const durationType = document.getElementById('durationType');
+            const durationHours = document.getElementById('durationHours');
+            const durationDays = document.getElementById('durationDays');
+            const durationHoursGroup = document.getElementById('durationHoursGroup');
+            const durationDaysGroup = document.getElementById('durationDaysGroup');
+            const checkin = document.getElementById('checkin');
+            const checkout = document.getElementById('checkout');
+            
+            durationType.addEventListener('change', function() {
+                durationHoursGroup.classList.add('hidden');
+                durationDaysGroup.classList.add('hidden');
+                
+                if (this.value === 'hours') {
+                    durationHoursGroup.classList.remove('hidden');
+                } else if (this.value === 'days') {
+                    durationDaysGroup.classList.remove('hidden');
+                }
+                
+                calculateCheckout();
+            });
+            
+            // Calcul automatique de la date de départ
+            function calculateCheckout() {
+                if (!checkin.value) return;
+                
+                const checkinDate = new Date(checkin.value);
+                let checkoutDate = new Date(checkinDate);
+                
+                if (durationType.value === 'hours' && durationHours.value) {
+                    checkoutDate.setHours(checkoutDate.getHours() + parseInt(durationHours.value));
+                } else if (durationType.value === 'days' && durationDays.value) {
+                    checkoutDate.setDate(checkoutDate.getDate() + parseInt(durationDays.value));
+                }
+                
+                // Formater la date pour l'input datetime-local
+                const formattedDate = checkoutDate.toISOString().slice(0, 16);
+                checkout.value = formattedDate;
+            }
+            
+            checkin.addEventListener('change', calculateCheckout);
+            durationHours.addEventListener('input', calculateCheckout);
+            durationDays.addEventListener('input', calculateCheckout);
+            
+            // Gestion des méthodes de paiement
+            const paymentMethod = document.getElementById('paymentMethod');
+            const cardNumberGroup = document.getElementById('cardNumberGroup');
+            
+            paymentMethod.addEventListener('change', function() {
+                cardNumberGroup.classList.add('hidden');
+                if (this.value === 'credit' || this.value === 'debit') {
+                    cardNumberGroup.classList.remove('hidden');
+                }
+            });
+            
+            // Gestion du type d'hébergement
+            const accommodationType = document.getElementById('accommodationType');
+            const roomOptions = document.getElementById('roomOptions');
+            const guesthouseOptions = document.getElementById('guesthouseOptions');
+            const availableRooms = document.getElementById('availableRooms');
+            const availableGuestHouses = document.getElementById('availableGuestHouses');
+            const selectedAccommodationInfo = document.getElementById('selectedAccommodationInfo');
+            const accommodationDetails = document.getElementById('accommodationDetails');
+            
+            let selectedRoom = null;
+            let selectedGuestHouse = null;
+            
+            accommodationType.addEventListener('change', function() {
+                roomOptions.classList.add('hidden');
+                guesthouseOptions.classList.add('hidden');
+                availableRooms.classList.add('hidden');
+                availableGuestHouses.classList.add('hidden');
+                selectedAccommodationInfo.classList.add('hidden');
+                
+                if (this.value === 'room') {
+                    roomOptions.classList.remove('hidden');
+                } else if (this.value === 'guesthouse') {
+                    guesthouseOptions.classList.remove('hidden');
+                    // Pour cet exemple, nous nous concentrons sur les chambres
+                }
+            });
+            
+            // Gestion de la sélection de la catégorie de prix pour les chambres
+            document.querySelectorAll('input[name="roomPrice"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        loadAvailableRooms(this.value);
+                    }
+                });
+            });
+            
+            // Charger les chambres disponibles
+            function loadAvailableRooms(priceCategory) {
+                // En production, vous feriez une requête AJAX pour récupérer les chambres disponibles
+                // Pour cet exemple, nous allons simuler des données
+                
+                availableRooms.innerHTML = '';
+                availableRooms.classList.remove('hidden');
+                
+                // Simuler des chambres disponibles selon la catégorie de prix
+                let rooms = [];
+                const roomPrefix = priceCategory === '20000' ? 'Eco-' : 
+                                 priceCategory === '40000' ? 'Standard-' : 'Luxe-';
+                
+                // Générer 3 chambres disponibles (non réservées)
+                for (let i = 1; i <= 3; i++) {
+                    const roomId = `room-${priceCategory}-${i}`;
+                    
+                    // Vérifier si la chambre est déjà réservée
+                    if (!existingReservations[roomId]) {
+                        rooms.push({
+                            id: roomId,
+                            number: `${roomPrefix}${i}`,
+                            price: priceCategory === '20000' ? '11,000 - 19,000 FCFA' :
+                                  priceCategory === '40000' ? '20,000 - 39,000 FCFA' : '40,000+ FCFA',
+                            description: priceCategory === '20000' ? 'Chambre économique avec ventilateur' :
+                                        priceCategory === '40000' ? 'Chambre standard avec climatisation' : 'Suite luxueuse avec tous les services',
+                            image: priceCategory === '20000' ? 'eco-room.jpg' :
+                                  priceCategory === '40000' ? 'standard-room.jpg' : 'luxe-room.jpg'
+                        });
+                    }
+                }
+                
+                // Afficher les chambres disponibles
+                if (rooms.length === 0) {
+                    availableRooms.innerHTML = '<p>Aucune chambre disponible dans cette catégorie pour le moment.</p>';
+                } else {
+                    rooms.forEach(room => {
+                        const roomCard = document.createElement('div');
+                        roomCard.className = 'room-card';
+                        roomCard.dataset.roomId = room.id;
+                        roomCard.innerHTML = `
+                            <h4>${room.number}</h4>
+                            <p>Prix: ${room.price}</p>
+                            <p>${room.description}</p>
+                        `;
+                        
+                        roomCard.addEventListener('click', function() {
+                            document.querySelectorAll('.room-card').forEach(card => {
+                                card.classList.remove('selected');
+                            });
+                            this.classList.add('selected');
+                            selectedRoom = room;
+                            showSelectedAccommodation(room);
+                        });
+                        
+                        availableRooms.appendChild(roomCard);
+                    });
+                }
+            }
+            
+            // Afficher les détails de l'hébergement sélectionné
+            function showSelectedAccommodation(accommodation) {
+                selectedAccommodationInfo.classList.remove('hidden');
+                
+                if (accommodationType.value === 'room') {
+                    accommodationDetails.innerHTML = `
+                        <h4>Chambre sélectionnée</h4>
+                        <p><strong>Numéro:</strong> ${accommodation.number}</p>
+                        <p><strong>Prix:</strong> ${accommodation.price}</p>
+                        <p><strong>Description:</strong> ${accommodation.description}</p>
+                    `;
+                } else {
+                    // Similaire pour les guest houses
+                }
+            }
+            
+            // Gestion de la soumission du formulaire
+            const bookingForm = document.getElementById('bookingForm');
+            
+            bookingForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!selectedRoom && accommodationType.value === 'room') {
+                    alert('Veuillez sélectionner une chambre');
+                    return;
+                }
+                
+                // Récupérer toutes les données du formulaire
+                const formData = {
+                    personalInfo: {
+                        fullName: document.getElementById('fullName').value,
+                        email: document.getElementById('email').value,
+                        profession: document.getElementById('profession').value,
+                        duration: {
+                            type: durationType.value,
+                            value: durationType.value === 'hours' 
+                                ? durationHours.value 
+                                : durationDays.value
+                        },
+                        checkin: checkin.value,
+                        checkout: checkout.value,
+                        paymentMethod: paymentMethod.value,
+                        cardNumber: document.getElementById('cardNumber')?.value || null
+                    },
+                    accommodation: {
+                        type: accommodationType.value,
+                        details: selectedRoom || selectedGuestHouse
+                    }
+                };
+                
+                // Enregistrer la réservation
+                if (selectedRoom) {
+                    const reservation = {
+                        guestName: formData.personalInfo.fullName,
+                        checkIn: formData.personalInfo.checkin,
+                        checkOut: formData.personalInfo.checkout,
+                        roomDetails: selectedRoom
+                    };
+                    
+                    // Ajouter à localStorage
+                    existingReservations[selectedRoom.id] = reservation;
+                    localStorage.setItem('permanentReservations', JSON.stringify(existingReservations));
+                }
+                
+                // Stocker les données pour la page dashboard
+                localStorage.setItem('bookingData', JSON.stringify(formData));
+                
+                // Rediriger vers la page dashboard
+                window.location.href = 'dashboard.html';
+            });
+        });
+    </script>
+</body>
+</html>

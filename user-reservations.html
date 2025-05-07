@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservations Utilisateur</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .reservation-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+        }
+        .reservation-card h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .reservation-info {
+            margin: 10px 0;
+        }
+        .reservation-info p {
+            margin: 5px 0;
+        }
+        .back-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .back-button:hover {
+            background-color: #45a049;
+        }
+        .no-reservations {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <button id="logoutButton" class="logout-button">Déconnexion</button>
+    <div class="container">
+        <h1 id="user-title">Réservations de l'utilisateur</h1>
+        <button id="backButton" class="back-button">Retour à l'administration</button>
+
+        <div id="reservations-container">
+            <!-- Les réservations seront affichées ici dynamiquement -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('reservations-container');
+            const backButton = document.getElementById('backButton');
+            const userTitle = document.getElementById('user-title');
+            
+            // Récupérer l'email de l'utilisateur dont on veut voir les réservations
+            const userEmail = localStorage.getItem('viewingUserEmail');
+            
+            // Récupérer les informations de l'utilisateur
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const user = users.find(u => u.email === userEmail);
+            
+            if (user) {
+                userTitle.textContent = `Réservations de ${user.prenom} ${user.nom}`;
+            }
+            
+            // Récupérer les réservations de l'utilisateur
+            const reservations = user ? user.reservations : [];
+            
+            if (reservations.length === 0) {
+                container.innerHTML = `
+                    <div class="no-reservations">
+                        <h2>Aucune réservation trouvée</h2>
+                        <p>Cet utilisateur n'a pas encore effectué de réservation.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Afficher chaque réservation
+            reservations.forEach(reservation => {
+                const card = document.createElement('div');
+                card.className = 'reservation-card';
+                
+                const checkInDate = new Date(reservation.checkIn);
+                const checkOutDate = new Date(reservation.checkOut);
+                
+                card.innerHTML = `
+                    <h3>Réservation pour la chambre ${reservation.roomId}</h3>
+                    <div class="reservation-info">
+                        <p><strong>Date d'arrivée:</strong> ${checkInDate.toLocaleString()}</p>
+                        <p><strong>Date de départ:</strong> ${checkOutDate.toLocaleString()}</p>
+                        <p><strong>Durée:</strong> ${reservation.durationValue} ${reservation.durationType === 'hours' ? 'heures' : 'jours'}</p>
+                        <p><strong>Méthode de paiement:</strong> ${reservation.paymentMethod}</p>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+
+            // Gestion du bouton retour
+            backButton.addEventListener('click', function() {
+                window.location.href = 'admin.html';
+            });
+
+            // Gestion de la déconnexion
+            const logoutButton = document.getElementById('logoutButton');
+            logoutButton.addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html> 

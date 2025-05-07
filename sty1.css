@@ -1,0 +1,295 @@
+/* Style global */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f4e1;
+    color: #333;
+}
+header {
+    background-color: #7e5e3f;
+    padding: 20px;
+    text-align: center;
+    color: rgb(144, 231, 30);
+}
+nav ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap; /* Permet de passer à la ligne si nécessaire */
+    
+}
+nav ul li {
+    display: inline;
+    padding: 1.8%;
+    
+}
+nav ul li a {
+    text-decoration: none;
+    color: rgb(209, 186, 228);
+    font-weight: bold;
+}
+.acc{
+    padding: 0px;
+}
+.acc:hover {
+    background-color: red;
+    transform: scale(1.1);
+    border-radius: 5px;
+    height: 20px;
+    padding: 10px;
+}
+
+nav ul li:hover a {
+    color: yellow;
+    font-size: 20px;
+}
+/*.ac{
+    padding: 15px;
+    border-bottom: 3px solid red;
+    color: yellow;
+    
+}*/
+/*.ac {
+    position: relative;
+    display: inline-block;
+    padding: 15px;
+    color: yellow;
+    text-decoration: none; 
+}
+
+.ac::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 3px;
+    background-color: red;
+    transition: width 2s ease-out;
+}
+
+.ac:hover::after {
+    width: 100%;
+}
+*/
+/*.ac {
+    position: relative;
+    display: inline-block;
+    padding: 15px;
+    color: yellow;
+    text-decoration: none;
+    border-bottom: 3px solid rgba(255, 255, 255, 0.3); /* Bordure de fond légère *//*
+}
+
+.ac::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 3px;
+    background-color: red;
+    animation: borderMove 2s linear infinite;
+}
+
+@keyframes borderMove {
+    0% {
+        width: 0;
+        left: 0;
+    }
+    100% {
+        width: 100%;
+        left: 0;
+    }
+}*/
+.ac {
+    position: relative;
+    display: inline-block;
+    color: yellow;
+    text-decoration: none;
+    padding: 10px;
+    margin-top: -5px;
+    overflow: hidden; /* Empêche le débordement de l'animation */
+}
+
+.ac::after {
+    content: "";
+    position: absolute;
+    left: -100%; /* Commence hors du cadre à gauche */
+    bottom: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(to right, transparent, red, transparent);
+    animation: borderMove 2s linear infinite;
+}
+
+@keyframes borderMove {
+    0% {
+        left: -100%; /* Départ hors du cadre */
+    }
+    100% {
+        left: 100%; /* Sortie complète à droite */
+    }
+}
+/* Styles pour le bouton de menu hamburger */
+.menu-toggle {
+    display: none;
+    background-color: #7e5e3f;
+    color: white;
+    border: none;
+    padding: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+/* Styles pour la nav-bar en mode mobile */
+@media (max-width: 768px) {
+    nav ul {
+        display: none;
+        flex-direction: column;
+        align-items: flex-start;
+        background-color: #7e5e3f;
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        padding: 10px;
+        z-index: 1000;
+    }
+
+    nav ul li {
+        display: block;
+        width: 100%;
+        text-align: left;
+    }
+
+    nav ul li a {
+        padding: 10px;
+        display: block;
+        color: white;
+    }
+
+    .menu-toggle {
+        display: block;
+    }
+
+    nav ul.active {
+        display: flex;
+    }
+}
+button:hover {
+    background-color: #b98560;
+    font-size: 20px;
+}
+
+.banner {
+    background: url('cham2.jpeg') no-repeat center center/cover;
+    background-size: cover;
+    height: 900px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+}
+.ali{
+    width: 100%;
+    height: auto;
+}
+.guesthouse-list{
+    text-align: center;
+}
+.room-list{
+    text-align: center;
+}
+.comments, .articles{
+    text-align: center;
+}
+h2{
+    text-align: center;
+}
+.er{text-align: center;}
+
+.tro{
+    color: rgb(135, 243, 11);
+    display: inline-block;
+    border-bottom: 2px solid rgb(135, 243, 11);
+    padding-bottom: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    letter-spacing: 2px;
+}
+.offers {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 20px;
+}
+.team{
+    text-align: center;
+}
+.offer-card {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin: 15px;
+    padding: 15px;
+    text-align: center;
+    width: 300px;
+}
+.offer-card img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+footer {
+    background-color: #222;
+    color: white;
+    text-align: center;
+    padding: 10px;
+    margin-top: 20px;
+}
+
+/* Style des formulaires */
+form {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 400px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+label {
+    font-weight: bold;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+button {
+    background-color: #d4a373;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #b98560;
+}

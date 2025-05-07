@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservation de Chambre</title>
+    <link rel="stylesheet" href="reserv.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        .hidden {
+            display: none;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: white;
+            text-decoration: none;
+            font-size: 8vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="spinner" id="loading-spinner"></div>
+    <header>
+        <h1>Réservation de Chambre</h1>
+        <button class="close-btn">&times;</button>
+    </header>
+
+    <main id="reservation-form">
+        <section class="room-info">
+            <h2>Détails de la Chambre</h2>
+            <p><strong>Numéro :</strong> <span id="roomNumber"></span></p>
+            <p><strong>Prix :</strong> <span id="roomPrice"></span> FCFA</p>
+            <p><strong>Informations :</strong> <span id="roomDetails"></span></p>
+        </section>
+        
+        <section class="reservation-form">
+            <h2>Informations de Réservation</h2>
+            <div id="verification-status" class="hidden">
+                <p>Un email de vérification a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception.</p>
+            </div>
+          
+            <form id="booking-form">
+                <div class="form-group">
+                    <label for="full-name">Nom complet :</label>
+                    <input type="text" id="full-name" required>
+                    <div class="error-message">Veuillez entrer votre nom complet</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email :</label>
+                    <input type="email" id="email" required>
+                    <div class="error-message">Veuillez entrer une adresse email valide</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="activity">Activité/Profession :</label>
+                    <input type="text" id="activity" name="activity" required>
+                    <div class="error-message">Ce champ est requis</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="durationType">Durée de séjour :</label>
+                    <select id="durationType" name="durationType" required>
+                        <option value="">Choisir...</option>
+                        <option value="hours">Heures</option>
+                        <option value="days">Jours</option>
+                    </select>
+                    <div class="error-message">Veuillez sélectionner une durée</div>
+                </div>
+                
+                <div id="durationHoursGroup" class="form-group hidden">
+                    <label for="durationHours">Nombre d'heures :</label>
+                    <input type="number" id="durationHours" name="durationHours" min="1" max="23">
+                    <div class="error-message">Veuillez entrer un nombre d'heures valide (1-23)</div>
+                </div>
+                
+                <div id="durationDaysGroup" class="form-group hidden">
+                    <label for="durationDays">Nombre de jours :</label>
+                    <input type="number" id="durationDays" name="durationDays" min="1">
+                    <div class="error-message">Veuillez entrer un nombre de jours valide</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkin">Date et heure d'arrivée :</label>
+                    <input type="datetime-local" id="checkin" name="checkin" required>
+                    <div class="error-message">Veuillez sélectionner une date d'arrivée</div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="checkout">Date et heure de départ :</label>
+                    <input type="datetime-local" id="checkout" name="checkout" required>
+                    <div class="error-message">Veuillez sélectionner une date de départ</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="uploadDocument">Document d'identité :</label>
+                    <input type="file" id="uploadDocument" name="uploadDocument" accept=".pdf,.jpg,.jpeg,.png" required>
+                    <div class="error-message">Veuillez télécharger un document valide</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="paymentMethod">Méthode de paiement :</label>
+                    <select id="paymentMethod" name="paymentMethod" required>
+                        <option value="">Choisir...</option>
+                        <option value="card">Carte bancaire</option>
+                        <option value="mobile">Mobile Money</option>
+                        <option value="paypal">PayPal</option>
+                    </select>
+                    <div class="payment-icons">
+                        <img src="visa.png" alt="Visa" class="payment-icon" data-method="card">
+                        <img src="mastercard.png" alt="Mastercard" class="payment-icon" data-method="card">
+                        <img src="mtn.png" alt="MTN Mobile Money" class="payment-icon" data-method="mobile">
+                        <img src="moov.png" alt="Moov Money" class="payment-icon" data-method="mobile">
+                        <img src="paypal.png" alt="PayPal" class="payment-icon" data-method="paypal">
+                    </div>
+                    <div class="error-message">Veuillez sélectionner une méthode de paiement</div>
+                </div>
+                
+                <div id="card-element" class="form-group hidden">
+                    <!-- Stripe Card Element will be inserted here -->
+                    <div class="error-message" id="card-errors"></div>
+                </div>
+
+                <div id="mobile-money-form" class="form-group hidden">
+                    <label for="phone">Numéro de téléphone :</label>
+                    <input type="tel" id="phone" pattern="[0-9]{8,}" placeholder="Ex: 97000000">
+                    <div class="error-message">Veuillez entrer un numéro de téléphone valide</div>
+                </div>
+
+                <button type="submit" id="submit-button">
+                    <span class="button-text">Valider la réservation</span>
+                    <div class="spinner hidden"></div>
+                </button>
+            </form>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Location de Chambres & Guest Houses au Bénin</p>
+    </footer>
+
+    <script src="reserv.js"></script>
+</body>
+</html>

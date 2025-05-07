@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>À Propos</title>
+    <link rel="stylesheet" href="sty1.css">
+</head>
+<body>
+    <header>
+        <h1>À Propos de Nous</h1>
+        <button class="menu-toggle">☰ Menu</button>
+        <nav>
+            <ul>
+                <li><a href="cahier1.html"class="acc">Accueil</a></li>
+                <li><a href="chambres.html"class="acc">Chambres à Louer</a></li>
+                <li><a href="gesthourse.html" class="acc">Guest Houses</a></li>
+                <li><a href="reservations.html" class="acc">Réserver</a></li>
+                <li><a href="blog.html" class="acc">Blog</a></li>
+                <li><a href="about.html" class="ac">À propos</a></li>
+                <li><a href="contact.html"class="acc">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <section class="about-us">
+            <h2>Notre Mission</h2>
+            <p class="er">Nous facilitons la réservation de chambres et de guest houses au Bénin en offrant une plateforme intuitive et fiable.
+                <br> Nous nous trouvons partout au Bénin et nos services sont assés bénéfique.
+            </p>
+            
+        </section>
+        
+        <section class="team">
+            <h2>Notre Équipe</h2>
+            <div class="team-member">
+                <img src="fon.jpeg" alt="Membre de l'équipe">
+                <p> <strong>Nom:</strong> TOORI <br>
+                    <strong>Prénom:</strong> Boukari<br>
+                    <strong>📞:</strong> +22991000802<br>
+                     - Fondateur</p>
+            </div>
+            <div class="team-member">
+                <img src="fon1.jpeg" alt="Membre de l'équipe">
+                <p><strong>Nom:</strong> ABANZIKI <br>
+                    <strong>Prénom:</strong> Thimoté<br>
+                    <strong>📞:</strong> +22991001802<br>
+                     - Responsable clientèle</p>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Location de Chambres & Guest Houses au Bénin</p>
+    </footer>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+    const menuToggle = document.querySelector(".menu-toggle");
+    const navMenu = document.querySelector("nav ul");
+
+    // Gestion de l'ouverture et de la fermeture du menu
+    menuToggle.addEventListener("click", function () {
+        navMenu.classList.toggle("active");
+    });
+
+    // Empêcher le menu de se cacher lorsque le curseur quitte la nav-bar
+    let isMouseOverMenu = false;
+
+    navMenu.addEventListener("mouseenter", function () {
+        isMouseOverMenu = true; // Le curseur est sur le menu
+    });
+
+    navMenu.addEventListener("mouseleave", function () {
+        isMouseOverMenu = false; // Le curseur quitte le menu
+    });
+
+    document.addEventListener("click", function (event) {
+        // Fermer le menu uniquement si le clic est en dehors du menu et du bouton
+        if (!navMenu.contains(event.target) && !menuToggle.contains(event.target) && !isMouseOverMenu) {
+            navMenu.classList.remove("active");
+        }
+    });
+});
+    </script>
+</body>
+</html>

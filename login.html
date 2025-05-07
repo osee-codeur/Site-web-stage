@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion/Inscription</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .switch-form {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .switch-form a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        .admin-toggle {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .admin-toggle label {
+            margin-left: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="form-title">Connexion</h1>
+        <div id="error-message" class="error"></div>
+        
+        <!-- Formulaire de Connexion -->
+        <form id="login-form">
+            <div class="form-group">
+                <label for="email">Email:</label>
+                <input type="email" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe:</label>
+                <input type="password" id="password" required>
+                <span id="togglePassword" style="position: absolute; right: 140px; top: 39.2%; transform: translateY(-50%); cursor: pointer;">👁️</span>
+            </div>
+            <button type="submit">Se connecter</button>
+        </form>
+
+        <!-- Formulaire d'Inscription -->
+        <form id="register-form" style="display: none;">
+            <div class="form-group">
+                <label for="reg-nom">Nom:</label>
+                <input type="text" id="reg-nom" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-prenom">Prénom:</label>
+                <input type="text" id="reg-prenom" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-email">Email:</label>
+                <input type="email" id="reg-email" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-password">Mot de passe:</label>
+                <input type="password" id="reg-password" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-sex">Sexe:</label>
+                <select id="reg-sex" required>
+                    <option value="">Sélectionner</option>
+                    <option value="M">Masculin</option>
+                    <option value="F">Féminin</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="reg-age">Âge:</label>
+                <input type="number" id="reg-age" required min="18">
+            </div>
+            <div class="form-group">
+                <label for="reg-phone">Téléphone:</label>
+                <input type="tel" id="reg-phone" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-profession">Profession:</label>
+                <input type="text" id="reg-profession" required>
+            </div>
+            
+            <!-- Option pour créer un compte admin -->
+            <div class="admin-toggle">
+                <input type="checkbox" id="reg-is-admin">
+                <label for="reg-is-admin">Créer un compte administrateur</label>
+            </div>
+            
+            <button type="submit">S'inscrire</button>
+        </form>
+
+        <div class="switch-form">
+            <a href="#" id="switch-form">Créer un compte</a>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+            const switchForm = document.getElementById('switch-form');
+            const formTitle = document.getElementById('form-title');
+            const errorMessage = document.getElementById('error-message');
+    
+            // Initialisation des données si nécessaire
+            if (!localStorage.getItem('users')) {
+                const defaultUsers = [
+                    {
+                        nom: "Admin",
+                        prenom: "Administrateur",
+                        email: "admin@hotel.com",
+                        password: "admin123",
+                        sexe: "M",
+                        profession: "Administrateur système",
+                        telephone: "+229 12 34 56 78",
+                        isAdmin: true,
+                        reservations: []
+                    }
+                ];
+                localStorage.setItem('users', JSON.stringify(defaultUsers));
+            }
+    
+            // Fonction pour toggle la visibilité du mot de passe
+            document.getElementById('togglePassword').addEventListener('click', function() {
+                const passwordInput = document.getElementById('password');
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    this.textContent = '🙈';
+                } else {
+                    passwordInput.type = 'password';
+                    this.textContent = '👁️';
+                }
+            });
+    
+            // Basculer entre connexion et inscription
+            switchForm.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (loginForm.style.display === 'none') {
+                    loginForm.style.display = 'block';
+                    registerForm.style.display = 'none';
+                    formTitle.textContent = 'Connexion';
+                    switchForm.textContent = 'Créer un compte';
+                } else {
+                    loginForm.style.display = 'none';
+                    registerForm.style.display = 'block';
+                    formTitle.textContent = 'Inscription';
+                    switchForm.textContent = 'Se connecter';
+                }
+                errorMessage.textContent = '';
+            });
+    
+            // Gestion de la connexion
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const users = JSON.parse(localStorage.getItem('users')) || [];
+                const user = users.find(u => u.email === email && u.password === password);
+    
+                if (user) {
+                    localStorage.setItem('currentUser', JSON.stringify(user));
+                    // Redirection différente pour l'admin
+                    if (user.isAdmin) {
+                        window.location.href = 'Admin.html';
+                    } else {
+                        window.location.href = 'chambres.html';
+                    }
+                } else {
+                    errorMessage.textContent = 'Email ou mot de passe incorrect';
+                }
+            });
+    
+            // Gestion de l'inscription
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const users = JSON.parse(localStorage.getItem('users')) || [];
+                const newUser = {
+                    nom: document.getElementById('reg-nom').value,
+                    prenom: document.getElementById('reg-prenom').value,
+                    email: document.getElementById('reg-email').value,
+                    password: document.getElementById('reg-password').value,
+                    sexe: document.getElementById('reg-sex').value,
+                    age: document.getElementById('reg-age').value,
+                    telephone: document.getElementById('reg-phone').value,
+                    profession: document.getElementById('reg-profession').value,
+                    isAdmin: document.getElementById('reg-is-admin').checked,
+                    reservations: []
+                };
+    
+                if (users.some(u => u.email === newUser.email)) {
+                    errorMessage.textContent = 'Cet email est déjà utilisé';
+                    return;
+                }
+    
+                users.push(newUser);
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('currentUser', JSON.stringify(newUser));
+                
+                // Redirection après inscription
+                if (newUser.isAdmin) {
+                    window.location.href = 'Admin.html';
+                } else {
+                    window.location.href = 'chambres.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

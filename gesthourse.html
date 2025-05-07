@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guest Houses</title>
+    <link rel="stylesheet" href="chambre.css">
+    <!-- Ajout des dépendances Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        .room-map {
+            height: 200px;
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+        .show-map-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .show-map-btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <button id="logoutButton" class="logout-button">Déconnexion</button>
+    <script defer src="filters.js"></script>
+    <script defer src="maps.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Vérifier si l'utilisateur est connecté
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            if (!currentUser) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Gestion de la déconnexion
+            const logoutButton = document.getElementById('logoutButton');
+            logoutButton.addEventListener('click', function() {
+                localStorage.removeItem('currentUser');
+                window.location.href = 'login.html';
+            });
+
+            // Gestion du menu
+            const menuToggle = document.querySelector(".menu-toggle");
+            const navMenu = document.querySelector("nav ul");
+
+            menuToggle.addEventListener("click", function () {
+                navMenu.classList.toggle("active");
+            });
+
+            let isMouseOverMenu = false;
+
+            navMenu.addEventListener("mouseenter", function () {
+                isMouseOverMenu = true;
+            });
+
+            navMenu.addEventListener("mouseleave", function () {
+                isMouseOverMenu = false;
+            });
+
+            document.addEventListener("click", function (event) {
+                if (!navMenu.contains(event.target) && !menuToggle.contains(event.target) && !isMouseOverMenu) {
+                    navMenu.classList.remove("active");
+                }
+            });
+
+            // 1. Gestion des nouvelles réservations
+            const urlParams = new URLSearchParams(window.location.search);
+            const highlightedRoomId = urlParams.get('highlight');
+            const newReservation = localStorage.getItem('tempGuestHouseReservation');
+
+            if (highlightedRoomId && newReservation) {
+                const reservation = JSON.parse(newReservation);
+                showReservationOnCard(highlightedRoomId, reservation);
+                savePermanentReservation(highlightedRoomId, reservation);
+                localStorage.removeItem('tempGuestHouseReservation');
+                scrollToReservedRoom(highlightedRoomId);
+            }
+
+            // 2. Charger toutes les réservations existantes
+            loadAllReservations();
+
+            // 3. Gestion des clics sur "Choisir"
+            setupChooseButtons();
+
+            // Fonction pour vérifier et afficher le bouton de réinitialisation
+            function checkAndShowResetButton() {
+                const reservations = JSON.parse(localStorage.getItem('guestHouseReservations') || '{}');
+                const reservationCount = Object.keys(reservations).length;
+
+                const existingBtn = document.getElementById('reset-reservations-btn');
+                if (existingBtn) existingBtn.remove();
+
+                if (reservationCount >= 2) {
+                    const header = document.querySelector('header');
+                    const resetBtn = document.createElement('button');
+                    resetBtn.id = 'reset-reservations-btn';
+                    resetBtn.textContent = 'Réinitialiser toutes les réservations';
+                    resetBtn.style.cssText = `
+                        position: absolute;
+                        top: 20px;
+                        right: 20px;
+                        padding: 10px 15px;
+                        background-color: #ff4444;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        z-index: 1000;
+                    `;
+
+                    resetBtn.addEventListener('click', function() {
+                        if (confirm('Voulez-vous vraiment supprimer toutes les réservations ?')) {
+                            localStorage.removeItem('guestHouseReservations');
+                            localStorage.removeItem('tempGuestHouseReservation');
+
+                            document.querySelectorAll('.reservation-info').forEach(el => el.remove());
+
+                            document.querySelectorAll('.choose-room').forEach(button => {
+                                button.disabled = false;
+                                button.textContent = "Choisir";
+                                button.style.opacity = "1";
+                            });
+
+                            window.location.href = 'gesthourse.html';
+                        }
+                    });
+
+                    header.appendChild(resetBtn);
+                }
+            }
+
+            // Fonction pour afficher une réservation sur une carte spécifique
+            function showReservationOnCard(roomId, reservation) {
+                const card = document.querySelector(`.room-card[data-id="${roomId}"]`);
+                if (!card) return;
+
+                const oldInfo = card.querySelector('.reservation-info');
+                if (oldInfo) oldInfo.remove();
+
+                const reservationInfo = createReservationInfo(reservation);
+                const button = card.querySelector('.choose-room');
+                card.insertBefore(reservationInfo, button);
+
+                disableChooseButton(button);
+                startCountdown(card, reservation.checkIn, reservation.checkOut);
+
+                checkAndShowResetButton();
+            }
+
+            // Fonction pour charger toutes les réservations existantes
+            function loadAllReservations() {
+                const reservations = JSON.parse(localStorage.getItem('guestHouseReservations') || '{}');
+
+                Object.entries(reservations).forEach(([roomId, reservation]) => {
+                    if (new Date(reservation.checkOut) > new Date()) {
+                        showReservationOnCard(roomId, reservation);
+                    } else {
+                        delete reservations[roomId];
+                    }
+                });
+
+                localStorage.setItem('guestHouseReservations', JSON.stringify(reservations));
+
+                checkAndShowResetButton();
+            }
+
+            // Gestion des clics sur les boutons "Choisir"
+            function setupChooseButtons() {
+                document.querySelectorAll('.choose-room').forEach(button => {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (this.disabled) return;
+
+                        const roomId = this.getAttribute('data-room-id');
+                        const containerId = this.closest('.room-container').getAttribute('data-container-id');
+                        const roomNumber = this.getAttribute('data-id');
+                        const roomPrice = this.getAttribute('data-price');
+                        const roomDetails = this.getAttribute('data-details');
+                        const roomCard = this.closest('.room-card');
+                        const roomData = {
+                            id: roomCard.dataset.id,
+                            price: roomCard.dataset.price,
+                            details: roomCard.dataset.details
+                        };
+
+                        const roomDataToStore = roomData ? JSON.stringify(roomData) : '{}';
+
+                        localStorage.setItem('selectedRoomId', roomId);
+                        localStorage.setItem('selectedRoomNumber', roomNumber);
+                        localStorage.setItem('selectedRoomPrice', roomPrice);
+                        localStorage.setItem('selectedRoomDetails', roomDetails);
+                        localStorage.setItem('selectedRoomData', roomDataToStore);
+                        localStorage.setItem('selectedContainerId', containerId);
+
+                        window.location.href = `reserv.html?room=${roomId}&container=${containerId}`;
+                    });
+                });
+            }
+
+            // Ajouter les boutons "Commentaire" à chaque room-card
+            document.querySelectorAll('.room-card').forEach(card => {
+                const commentButton = document.createElement('button');
+                commentButton.className = 'comment-button';
+                commentButton.dataset.roomId = card.dataset.id;
+                commentButton.textContent = 'Commentaire';
+                card.appendChild(commentButton);
+            });
+
+            // Mettre à jour l'apparence des boutons "Commentaire" si des commentaires existent
+            let comments = JSON.parse(localStorage.getItem('guestHouseComments') || '[]');
+            document.querySelectorAll('.room-card').forEach(card => {
+                const roomId = card.dataset.id;
+                const commentButton = card.querySelector('.comment-button');
+                const hasComments = comments.some(comment => comment.roomId === roomId);
+                if (hasComments) {
+                    commentButton.textContent = 'Commentaire ✔️';
+                    commentButton.style.backgroundColor = '#00FF00';
+                    commentButton.classList.add('commented');
+                } else {
+                    commentButton.textContent = 'Commentaire';
+                    commentButton.classList.remove('commented');
+                }
+            });
+
+            // Gestion des boutons "Commentaire"
+            document.querySelectorAll('.comment-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    const roomId = this.dataset.roomId;
+                    if (confirm("Voulez-vous donné votre avis par rapport à cette chambre ?")) {
+                        const chooseButton = this.closest('.room-card').querySelector('.choose-room');
+                        localStorage.setItem('selectedRoomForCommentId', roomId);
+                        localStorage.setItem('selectedRoomForCommentNumber', chooseButton.dataset.id);
+                        localStorage.setItem('selectedRoomForCommentPrice', chooseButton.dataset.price);
+                        localStorage.setItem('selectedRoomForCommentDetails', chooseButton.dataset.details);
+                        window.location.href = `formm.html?roomId=${roomId}`;
+                    } else {
+                        window.location.href = `comt.html?roomId=${roomId}`;
+                    }
+                });
+            });
+
+            // Configuration du système de filtrage par prix
+            function setupPriceFilter() {
+                const filterButton = document.getElementById('filter-button');
+                const resetButton = document.getElementById('reset-filter');
+                const minPriceInput = document.getElementById('min-price');
+                const maxPriceInput = document.getElementById('max-price');
+                
+                filterButton.addEventListener('click', function() {
+                    const minPrice = parseInt(minPriceInput.value) || 0;
+                    const maxPrice = parseInt(maxPriceInput.value) || Number.MAX_SAFE_INTEGER;
+                    
+                    filterRoomsByPrice(minPrice, maxPrice);
+                });
+                
+                resetButton.addEventListener('click', function() {
+                    minPriceInput.value = '';
+                    maxPriceInput.value = '';
+                    resetRoomFilters();
+                });
+                
+                // Fonction pour filtrer les chambres par prix
+                function filterRoomsByPrice(minPrice, maxPrice) {
+                    const roomCards = document.querySelectorAll('.room-card');
+                    let anyRoomVisible = false;
+        
+                    roomCards.forEach(card => {
+                        const price = parseInt(card.querySelector('.choose-room').dataset.price) || 0;
+                        const container = card.closest('.room-container');
+            
+                        if (price >= minPrice && price <= maxPrice) {
+                            container.classList.remove('hidden');
+                            anyRoomVisible = true;
+                        } else {
+                            container.classList.add('hidden');
+                        }
+                    });
+        
+                    toggleNoResultsMessage(!anyRoomVisible);
+                }
+
+                function resetRoomFilters() {
+                    document.querySelectorAll('.room-container').forEach(c => c.classList.remove('hidden'));
+                    toggleNoResultsMessage(false);
+                    minPriceInput.value = '';
+                    maxPriceInput.value = '';
+                }
+
+                function toggleNoResultsMessage(show) {
+                    const msg = document.getElementById('no-results-message');
+                    if (show && !msg) {
+                        const newMsg = document.createElement('p');
+                        newMsg.id = 'no-results-message';
+                        newMsg.textContent = 'Aucune chambre ne correspond à ces critères.';
+                        newMsg.style.cssText = 'text-align:center;font-weight:bold;color:#ff4444;margin:20px;';
+                        document.querySelector('main').prepend(newMsg);
+                    } else if (!show && msg) {
+                        msg.remove();
+                    }
+                }
+            }
+
+            // Initialisation
+            document.addEventListener("DOMContentLoaded", function() {
+                setupPriceFilter();
+            });
+
+            // Sauvegarde des réservations permanentes
+            function savePermanentReservation(roomId, reservation) {
+                const allReservations = JSON.parse(localStorage.getItem('guestHouseReservations') || '{}');
+                allReservations[roomId] = reservation;
+                localStorage.setItem('guestHouseReservations', JSON.stringify(allReservations));
+            }
+
+            // Création de l'élément d'information de réservation
+            function createReservationInfo(reservation) {
+                const div = document.createElement('div');
+                div.className = 'reservation-info';
+                div.innerHTML = `
+                    <p><strong>Réservé par:</strong> ${reservation.guestName}</p>
+                    <p><strong>Période:</strong> ${formatDate(reservation.checkIn)} au ${formatDate(reservation.checkOut)}</p>
+                    <p><strong>Temps restant:</strong> <span class="countdown"></span></p>
+                `;
+                return div;
+            }
+
+            // Désactivation du bouton "Choisir"
+            function disableChooseButton(button) {
+                button.disabled = true;
+                button.textContent = "Indisponible";
+                button.style.opacity = "0.7";
+            }
+
+            // Gestion du compte à rebours
+            function startCountdown(card, checkInDate, checkOutDate) {
+                const countdownElement = card.querySelector('.countdown');
+                if (!countdownElement) return;
+
+                const now = new Date();
+                const checkIn = new Date(checkInDate);
+                const checkOut = new Date(checkOutDate);
+
+                const updateCountdown = () => {
+                    const currentTime = new Date();
+
+                    if (currentTime < checkIn) {
+                        const timeUntil = checkIn - currentTime;
+                        const days = Math.floor(timeUntil / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeUntil % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeUntil % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((timeUntil % (1000 * 60)) / 1000);
+
+                        countdownElement.textContent = `Début dans: ${days}j ${hours}h ${minutes}m ${seconds}s`;
+                        countdownElement.style.color = "blue";
+                        setTimeout(updateCountdown, 1000);
+                        return;
+                    }
+
+                    if (currentTime >= checkIn && currentTime <= checkOut) {
+                        const timeLeft = checkOut - currentTime;
+                        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+                        countdownElement.textContent = `Reste: ${days}j ${hours}h ${minutes}m ${seconds}s`;
+                        countdownElement.style.color = days > 0 ? "orange" : "red";
+                        setTimeout(updateCountdown, 1000);
+                        return;
+                    }
+
+                    countdownElement.textContent = "Terminé";
+                    countdownElement.style.color = "green";
+
+                    setTimeout(() => {
+                        const button = card.querySelector('.choose-room');
+                        if (button) {
+                            button.disabled = false;
+                            button.textContent = "Choisir";
+                            button.style.opacity = "1";
+                        }
+
+                        const reservationInfo = card.querySelector('.reservation-info');
+                        if (reservationInfo) {
+                            setTimeout(() => {
+                                reservationInfo.remove();
+
+                                const roomId = card.dataset.id;
+                                const reservations = JSON.parse(localStorage.getItem('guestHouseReservations') || '{}');
+                                delete reservations[roomId];
+                                localStorage.setItem('guestHouseReservations', JSON.stringify(reservations));
+
+                                checkAndShowResetButton();
+                            }, 1000);
+                        }
+                    }, 2000);
+                };
+
+                updateCountdown();
+            }
+
+            // Défilement vers la chambre réservée
+            function scrollToReservedRoom(roomId) {
+                const card = document.querySelector(`.room-card[data-id="${roomId}"]`);
+                if (card) {
+                    const container = card.closest('.room-container');
+                    if (container) {
+                        container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+
+            // Formatage de la date
+            function formatDate(dateString) {
+                const options = { day: 'numeric', month: 'long', year: 'numeric' };
+                return new Date(dateString).toLocaleDateString('fr-FR', options);
+            }
+        });
+    </script>
+    <header>
+        <h1>Guest Houses</h1>
+        <button class="menu-toggle">☰ Menu</button>
+        <nav>
+            <ul>
+                <li><a href="cahier1.html" class="acc">Accueil</a></li>
+                <li><a href="chambres.html" class="acc">Chambres à Louer</a></li>
+                <li><a href="gesthourse.html" class="ac">Guest Houses</a></li>
+                <li><a href="blog.html" class="acc">Blog</a></li>
+                <li><a href="about.html" class="acc">À propos</a></li>
+                <li><a href="contact.html" class="acc">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+    <!-- Section filtre par prix -->
+    <div class="filter-container">
+        <label for="min-price">Prix Min (FCFA):</label>
+        <input type="number" id="min-price" min="0" step="1000" placeholder="Min">
+        
+        <label for="max-price">Prix Max (FCFA):</label>
+        <input type="number" id="max-price" min="0" step="1000" placeholder="Max">
+        
+        <button id="filter-button">Filtrer</button>
+        <button id="reset-filter" class="reset">Réinitialiser</button>
+    </div>
+    <main>
+        <section class="room-category" data-section-id="1">
+            <h2>Chambres à partir de moins de 20 000 FCFA</h2>
+            <div class="room-list">
+                <!-- Container 1 -->
+                <div class="room-container" data-container-id="1">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-1-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="spra1.jpeg" alt="Chambre 1">
+                            <p>Numéro : 1 | Prix : 11 000 FCFA</p>
+                            <p>Chambre avec WiFi et Climatisation <br>Vue du Jardin</p>
+                            <button class="choose-room" data-room-id="room-1-1" data-id="1" data-price="11000" data-details="Chambre avec WiFi et Climatisation">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-1-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-1-2" data-lat="6.3675" data-lng="2.4226">
+                            <img src="spra2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 1 | Prix : 11 000 FCFA</p>
+                            <p>Chambre avec Wifi et clématisation <br> Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-1-2" data-id="1" data-price="11000" data-details="Chambre avec WiFi et Climatisation">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-1-3" data-lat="6.3676" data-lng="2.4227">
+                            <img src="spra4.jpeg" alt="Chambre 3">
+                            <p>Numéro : 1 | Prix : 11 000 FCFA</p>
+                            <p>Chambre avec WiFi et Climatisation <br>Vue du profil Est</p>
+                            <button class="choose-room" data-room-id="room-1-3" data-id="1" data-price="11000" data-details="Chambre avec WiFi et Climatisation">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 2 -->
+                <div class="room-container" data-container-id="2">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-2-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="me8.jpg" alt="Chambre 1">
+                            <p>Numéro : 2 | Prix : 12 000 FCFA</p>
+                            <p>Chambre avec WiFi <br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-2-1" data-id="2" data-price="12000" data-details="Chambre avec WiFi et simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-2-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-2-2">
+                            <img src="me2.jpg" alt="Chambre 2">
+                            <p>Numéro : 2 | Prix : 12 000 FCFA</p>
+                            <p>Chambre Simple avec Wifi <br> Vue du chambre à coucher</p>
+                            <button class="choose-room" data-room-id="room-2-2" data-id="2" data-price="12000" data-details="Chambre avec WiFi et simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-2-3">
+                            <img src="spra4.jpeg" alt="Chambre 3">
+                            <p>Numéro : 2 | Prix : 12 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-2-3" data-id="2" data-price="12000" data-details="Chambre avec WiFi et simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 3 -->
+                <div class="room-container" data-container-id="3">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-3-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="me3.jpg" alt="Chambre 1">
+                            <p>Numéro : 3 | Prix : 12 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-3-1" data-id="3" data-price="12000" data-details="Chambre avec WiFi et simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-3-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-3-2">
+                            <img src="res2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 3 | Prix : 14 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-3-2" data-id="3" data-price="14000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-3-3">
+                            <img src="res3.jpeg" alt="Chambre 3">
+                            <p>Numéro :3 | Prix : 14 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-3-3" data-id="3" data-price="14000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 4 -->
+                <div class="room-container" data-container-id="4">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-4-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="me6.jpg" alt="Chambre 1">
+                            <p>Numéro : 4 | Prix : 12 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-4-1" data-id="4" data-price="12000" data-details="Chambre avec WiFi et simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-4-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-4-2">
+                            <img src="res6.jpeg" alt="Chambre 2">
+                            <p>Numéro : 4 | Prix : 16 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-4-2" data-id="4" data-price="16000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-4-3">
+                            <img src="res3.jpeg" alt="Chambre 3">
+                            <p>Numéro :4 | Prix : 16 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-4-3" data-id="4" data-price="16000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 5 -->
+                <div class="room-container" data-container-id="5">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-5-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="mr4.jpg" alt="Chambre 1">
+                            <p>Numéro : 5 | Prix : 18 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-5-1" data-id="5" data-price="18000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-5-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-5-2">
+                            <img src="res7.jpeg" alt="Chambre 2">
+                            <p>Numéro : 5 | Prix : 18 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-5-2" data-id="5" data-price="18000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-5-3">
+                            <img src="rest1.jpeg" alt="Chambre 3">
+                            <p>Numéro :5 | Prix : 18 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-5-3" data-id="5" data-price="18000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 6 -->
+                <div class="room-container" data-container-id="6">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-6-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="spra4.jpeg" alt="Chambre 1">
+                            <p>Numéro : 6 | Prix : 19 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-6-1" data-id="6" data-price="19000" data-details="Chambre avec des ventilateurs">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-6-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-6-2">
+                            <img src="rest2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 6 | Prix : 19 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-6-2" data-id="6" data-price="19000" data-details="Chambre avec des ventilateurs">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-6-3">
+                            <img src="rest3.jpeg" alt="Chambre 3">
+                            <p>Numéro :6 | Prix : 19 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-6-3" data-id="6" data-price="19000" data-details="Chambre avec des ventilateurs">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="room-category" data-section-id="2">
+            <h2>Chambres à partir de 20 000 - 40 000 FCFA</h2>
+            <div class="room-list">
+                <!-- Container 7 -->
+                <div class="room-container" data-container-id="7">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-7-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="spra1.jpeg" alt="Chambre 1">
+                            <p>Numéro : 1 | Prix : 20 000 FCFA</p>
+                            <p>Chambre avec WiFi et Climatisation <br>Vue du Jardin</p>
+                            <button class="choose-room" data-room-id="room-7-1" data-id="1" data-price="20000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-7-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-7-2">
+                            <img src="spra2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 1 | Prix : 20 000 FCFA</p>
+                            <p>Chambre avec Wifi et clématisation <br> Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-7-2" data-id="1" data-price="20000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-7-3">
+                            <img src="spra4.jpeg" alt="Chambre 3">
+                            <p>Numéro : 1 | Prix : 20 000 FCFA</p>
+                            <p>Chambre avec WiFi et Climatisation <br>Vue du profil Est</p>
+                            <button class="choose-room" data-room-id="room-7-3" data-id="1" data-price="20000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 8 -->
+                <div class="room-container" data-container-id="8">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-8-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="me8.jpg" alt="Chambre 1">
+                            <p>Numéro : 2 | Prix : 24 000 FCFA</p>
+                            <p>Chambre avec WiFi <br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-8-1" data-id="2" data-price="24000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-8-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-8-2">
+                            <img src="me2.jpg" alt="Chambre 2">
+                            <p>Numéro : 2 | Prix : 24 000 FCFA</p>
+                            <p>Chambre Simple avec Wifi <br> Vue du chambre à coucher</p>
+                            <button class="choose-room" data-room-id="room-8-2" data-id="2" data-price="24000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-8-3">
+                            <img src="spra4.jpeg" alt="Chambre 3">
+                            <p>Numéro : 2 | Prix : 24 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-8-3" data-id="2" data-price="24000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 9 -->
+                <div class="room-container" data-container-id="9">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-9-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="res5.jpeg" alt="Chambre 1">
+                            <p>Numéro : 3 | Prix : 28 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du baignoir</p>
+                            <button class="choose-room" data-room-id="room-9-1" data-id="3" data-price="28000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-9-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-9-2">
+                            <img src="res2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 3 | Prix : 28 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-9-2" data-id="3" data-price="28000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-9-3">
+                            <img src="res3.jpeg" alt="Chambre 3">
+                            <p>Numéro :3 | Prix : 28 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-9-3" data-id="3" data-price="28000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 10 -->
+                <div class="room-container" data-container-id="10">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-10-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="me5.jpg" alt="Chambre 1">
+                            <p>Numéro : 4 | Prix : 32 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-10-1" data-id="4" data-price="32000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-10-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-10-2">
+                            <img src="res6.jpeg" alt="Chambre 2">
+                            <p>Numéro : 4 | Prix : 32 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-10-2" data-id="4" data-price="32000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-10-3">
+                            <img src="res3.jpeg" alt="Chambre 3">
+                            <p>Numéro :4 | Prix : 32 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-10-3" data-id="4" data-price="32000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 11 -->
+                <div class="room-container" data-container-id="11">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-11-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="mr4.jpg" alt="Chambre 1">
+                            <p>Numéro : 5 | Prix : 36 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-11-1" data-id="5" data-price="36000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-11-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-11-2">
+                            <img src="res7.jpeg" alt="Chambre 2">
+                            <p>Numéro : 5 | Prix : 36 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-11-2" data-id="5" data-price="36000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-11-3">
+                            <img src="rest1.jpeg" alt="Chambre 3">
+                            <p>Numéro :5 | Prix : 36 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-11-3" data-id="5" data-price="36000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 12 -->
+                <div class="room-container" data-container-id="12">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-12-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="spra4.jpeg" alt="Chambre 1">
+                            <p>Numéro : 6 | Prix : 40 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-12-1" data-id="6" data-price="40000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-12-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-12-2">
+                            <img src="rest2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 6 | Prix : 40 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-12-2" data-id="6" data-price="40000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-12-3">
+                            <img src="rest3.jpeg" alt="Chambre 3">
+                            <p>Numéro :6 | Prix : 40 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-12-3" data-id="6" data-price="40000" data-details="Chambre avec wifi et clématisation">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+            </div>
+        </section>
+        
+        <section class="room-category" data-section-id="3">
+            <h2>Chambres à partir de plus de 40 000 FCFA</h2>
+            <div class="room-list">
+                <!-- Container 13 -->
+                <div class="room-container" data-container-id="13">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-13-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="spra1.jpeg" alt="Chambre 1">
+                            <p>Numéro : 1 | Prix : 42 000 FCFA</p>
+                            <p>Chambre avec WiFi et Climatisation <br>Vue du Jardin</p>
+                            <button class="choose-room" data-room-id="room-13-1" data-id="1" data-price="42000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-13-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-13-2">
+                            <img src="spra2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 1 | Prix : 42 000 FCFA</p>
+                            <p>Chambre avec Wifi et clématisation <br> Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-13-2" data-id="1" data-price="42000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-13-3">
+                            <img src="spra4.jpeg" alt="Chambre 3">
+                            <p>Numéro : 1 | Prix : 42 000 FCFA</p>
+                            <p>Chambre avec WiFi et Climatisation <br>Vue du profil Est</p>
+                            <button class="choose-room" data-room-id="room-13-3" data-id="1" data-price="42000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 14 -->
+                <div class="room-container" data-container-id="14">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-14-1"data-lat="9.3372" data-lng="2.6303">
+                            <img src="me8.jpg" alt="Chambre 1">
+                            <p>Numéro : 2 | Prix : 46 000 FCFA</p>
+                            <p>Chambre avec WiFi <br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-14-1" data-id="2" data-price="46000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-14-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-14-2">
+                            <img src="me2.jpg" alt="Chambre 2">
+                            <p>Numéro : 2 | Prix : 46 000 FCFA</p>
+                            <p>Chambre Simple avec Wifi <br> Vue du chambre à coucher</p>
+                            <button class="choose-room" data-room-id="room-14-2" data-id="2" data-price="46000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-14-3">
+                            <img src="spra4.jpeg" alt="Chambre 3">
+                            <p>Numéro : 2 | Prix : 46 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-14-3" data-id="2" data-price="46000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 15 -->
+                <div class="room-container" data-container-id="15">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-15-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="res5.jpeg" alt="Chambre 1">
+                            <p>Numéro : 3 | Prix : 50 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du baignoir</p>
+                            <button class="choose-room" data-room-id="room-15-1" data-id="3" data-price="50000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-15-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-15-2">
+                            <img src="res2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 3 | Prix : 50 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-15-2" data-id="3" data-price="50000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-15-3">
+                            <img src="res3.jpeg" alt="Chambre 3">
+                            <p>Numéro :3 | Prix : 50 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-15-3" data-id="3" data-price="50000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 16 -->
+                <div class="room-container" data-container-id="16">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-16-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="me5.jpg" alt="Chambre 1">
+                            <p>Numéro : 4 | Prix : 55 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-16-1" data-id="4" data-price="55000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-16-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-16-2">
+                            <img src="res6.jpeg" alt="Chambre 2">
+                            <p>Numéro : 4 | Prix : 55 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-16-2" data-id="4" data-price="55000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-16-3">
+                            <img src="res3.jpeg" alt="Chambre 3">
+                            <p>Numéro :4 | Prix : 55 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-16-3" data-id="4" data-price="55000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 17 -->
+                <div class="room-container" data-container-id="17">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-17-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="mr4.jpg" alt="Chambre 1">
+                            <p>Numéro : 5 | Prix : 60 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du déhort</p>
+                            <button class="choose-room" data-room-id="room-17-1" data-id="5" data-price="60000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-17-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-17-2">
+                            <img src="res7.jpeg" alt="Chambre 2">
+                            <p>Numéro : 5 | Prix : 60 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-17-2" data-id="5" data-price="60000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-17-3">
+                            <img src="rest1.jpeg" alt="Chambre 3">
+                            <p>Numéro :5 | Prix : 60 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-17-3" data-id="5" data-price="60000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+
+                <!-- Container 18 -->
+                <div class="room-container" data-container-id="18">
+                    <button class="carousel-btn prev-btn">&#10094;</button>
+                    <div class="room-carousel">
+                        <div class="room-card" data-id="room-18-1" data-lat="9.3372" data-lng="2.6303">
+                            <img src="spra4.jpeg" alt="Chambre 1">
+                            <p>Numéro : 6 | Prix : 65 000 FCFA</p>
+                            <p>Chambre simple avec ventilateur <br>Vue du profil</p>
+                            <button class="choose-room" data-room-id="room-18-1" data-id="6" data-price="65000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                            <button class="show-map-btn">Voir sur la carte</button>
+                            <div id="map-room-18-1" class="room-map"></div>
+                        </div>
+                        <div class="room-card" data-id="room-18-2">
+                            <img src="rest2.jpeg" alt="Chambre 2">
+                            <p>Numéro : 6 | Prix : 65 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue de la Chambre</p>
+                            <button class="choose-room" data-room-id="room-18-2" data-id="6" data-price="65000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                        <div class="room-card" data-id="room-18-3">
+                            <img src="rest3.jpeg" alt="Chambre 3">
+                            <p>Numéro :6 | Prix : 65 000 FCFA</p>
+                            <p>Chambre avec Climatisation<br>Vue du sallon</p>
+                            <button class="choose-room" data-room-id="room-18-3" data-id="6" data-price="65000" data-details="Chambre avec WiFi et clematisation simple">Choisir</button>
+                        </div>
+                    </div>
+                    <button class="carousel-btn next-btn">&#10095;</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Location de Chambres & Guest Houses au Bénin</p>
+    </footer>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'937738921a030c0a',t:'MTc0NTg1MDI0Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>

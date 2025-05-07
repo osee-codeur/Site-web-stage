@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tous les Commentaires Guest House</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #f4f6f9;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .comment {
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .comment:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+        .comment h3 {
+            margin-top: 0;
+            color: #34495e;
+            font-size: 1.8em;
+            border-bottom: 2px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+        .comment p {
+            margin: 10px 0;
+            color: #555;
+            font-size: 1.1em;
+            line-height: 1.5;
+        }
+        .comment ul {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+        }
+        .comment ul li {
+            margin: 8px 0;
+            font-size: 1em;
+            color: #7f8c8d;
+            position: relative;
+            padding-left: 20px;
+        }
+        .comment ul li::before {
+            content: '★';
+            position: absolute;
+            left: 0;
+            color: #f1c40f;
+        }
+        .no-comments {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+        #commentsList {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .comment-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .comment-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+        }
+        .comment-actions .edit-button {
+            background-color: #3498db;
+            color: white;
+        }
+        .comment-actions .edit-button:hover {
+            background-color: #2980b9;
+        }
+        .comment-actions .delete-button {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .comment-actions .delete-button:hover {
+            background-color: #c0392b;
+        }
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: black;
+            text-decoration: none;
+            font-size: 8vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="dashboard.html#usersList" class="back-btn">&#8592;</a>
+        <h1>Tous les Commentaires Guest House</h1>
+        <div id="commentsList"></div>
+    </div>
+    <script>
+        // Fonction pour générer une couleur unique basée sur roomId
+        function getColorFromRoomId(roomId) {
+            let hash = 0;
+            for (let i = 0; i < roomId.length; i++) {
+                hash = roomId.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const hue = Math.abs(hash % 360);
+            return `hsl(${hue}, 70%, 60%)`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const roomId = urlParams.get('roomId');
+                const userEmail = urlParams.get('userEmail');
+                const comments = JSON.parse(localStorage.getItem('guestHouseComments') || '[]');
+                const commentsList = document.getElementById('commentsList');
+
+                let filteredComments = comments;
+                if (roomId) {
+                    filteredComments = filteredComments.filter(comment => comment.roomId === roomId);
+                }
+                if (userEmail) {
+                    filteredComments = filteredComments.filter(comment => comment.email === decodeURIComponent(userEmail));
+                }
+
+                if (filteredComments.length === 0) {
+                    if (roomId && userEmail) {
+                        commentsList.innerHTML = `<p class="no-comments">Aucun commentaire n'a été laissé par cet utilisateur pour cette chambre.</p>`;
+                    } else if (roomId) {
+                        commentsList.innerHTML = `<p class="no-comments">Aucun commentaire n'a été laissé pour cette chambre.</p>`;
+                    } else if (userEmail) {
+                        commentsList.innerHTML = `<p class="no-comments">Aucun commentaire n'a été laissé par cet utilisateur.</p>`;
+                    } else {
+                        commentsList.innerHTML = `<p class="no-comments">Aucun commentaire pour le moment.</p>`;
+                    }
+                } else {
+                    filteredComments.forEach(comment => {
+                        const commentDiv = document.createElement('div');
+                        commentDiv.className = 'comment';
+                        const borderColor = getColorFromRoomId(comment.roomId);
+                        commentDiv.style.borderColor = borderColor;
+                        commentDiv.innerHTML = `
+                            <h3>Chambre ${comment.roomId}</h3>
+                            <p><strong>Nom:</strong> ${comment.name} ${comment.firstName}</p>
+                            <p><strong>Évaluation:</strong></p>
+                            <ul>
+                                <li>État de la chambre: ${comment.ratings.roomState}/5</li>
+                                <li>Qualité de la chambre: ${comment.ratings.quality}/5</li>
+                                <li>État du lit: ${comment.ratings.bedState}/5</li>
+                            </ul>
+                            <p><strong>Commentaire:</strong> ${comment.comment}</p>
+                            <p><strong>Date:</strong> ${new Date(comment.timestamp).toLocaleString()}</p>
+                            <div class="comment-actions">
+                                <button class="edit-button" data-comment-id="${comment.commentId}">Modifier</button>
+                                <button class="delete-button" data-comment-id="${comment.commentId}" data-room-id="${comment.roomId}">Supprimer</button>
+                            </div>
+                        `;
+                        commentsList.appendChild(commentDiv);
+                    });
+
+                    // Gestion des clics sur "Modifier"
+                    document.querySelectorAll('.edit-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const commentId = this.dataset.commentId;
+                            localStorage.setItem('editingCommentId', commentId);
+                            const comment = comments.find(c => c.commentId == commentId);
+                            if (comment) {
+                                localStorage.setItem('selectedRoomForCommentId', comment.roomId);
+                                window.location.href = `formm.html?roomId=${comment.roomId}&edit=${commentId}${userEmail ? '&userEmail=' + encodeURIComponent(userEmail) : ''}`;
+                            }
+                        });
+                    });
+
+                    // Gestion des clics sur "Supprimer"
+                    document.querySelectorAll('.delete-button').forEach(button => {
+                        button.addEventListener('click', function() {
+                            const commentId = this.dataset.commentId;
+                            const roomId = this.dataset.roomId;
+                            if (confirm('Voulez-vous vraiment supprimer ce commentaire ?')) {
+                                const updatedComments = comments.filter(c => c.commentId != commentId);
+                                localStorage.setItem('guestHouseComments', JSON.stringify(updatedComments));
+                                window.location.reload();
+                            }
+                        });
+                    });
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement des commentaires:', error);
+                document.getElementById('commentsList').innerHTML = '<p class="no-comments">Erreur lors du chargement des commentaires.</p>';
+            }
+        });
+    </script>
+</body>
+</html>

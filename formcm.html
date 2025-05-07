@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulaire de Commentaire</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #74ebd5, #acb6e5);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Roboto', Arial, sans-serif;
+            margin: 0;
+        }
+        .container {
+            max-width: 700px;
+            margin: 40px;
+            padding: 30px;
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            animation: fadeIn 0.8s ease-out;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .room-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #34495e;
+            font-size: 1.1em;
+        }
+        .room-info p {
+            margin: 8px 0;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        label {
+            font-weight: bold;
+            color: #34495e;
+            font-size: 1.1em;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            padding: 12px;
+            border: 2px solid #dfe6e9;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 1em;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 8px rgba(52, 152, 219, 0.3);
+        }
+        input[readonly] {
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+        }
+        textarea {
+            height: 120px;
+            resize: vertical;
+        }
+        button {
+            padding: 12px 30px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            align-self: center;
+            transition: background-color 0.3s, transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        button:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        button.loading span {
+            opacity: 0;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        /* Responsive design */
+        @media (max-width: 600px) {
+            .container {
+                margin: 20px;
+                padding: 20px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            button {
+                width: 100%;
+            }
+        }
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: black;
+            text-decoration: none;
+            font-size: 8vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Formulaire de Commentaire</h1>
+        <a href="chambres.html" class="back-btn">&#8592;</a>
+        <div class="room-info">
+            <p>Numéro de la chambre: <span id="roomNumber"></span></p>
+            <p>Prix: <span id="roomPrice"></span> FCFA</p>
+            <p>Détails: <span id="roomDetails"></span></p>
+        </div>
+        <form id="commentForm">
+            <label for="name">Nom:</label>
+            <input type="text" id="name" name="name" readonly>
+            <label for="firstName">Prénom:</label>
+            <input type="text" id="firstName" name="firstName" readonly>
+            <label for="clientNumber">Numéro de client:</label>
+            <input type="text" id="clientNumber" name="clientNumber" readonly>
+            <label for="roomState">État de la chambre (1-5):</label>
+            <select id="roomState" name="roomState">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <label for="quality">Qualité de la chambre (1-5):</label>
+            <select id="quality" name="quality">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <label for="bedState">État du lit (1-5):</label>
+            <select id="bedState" name="bedState">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+            </select>
+            <label for="comment">Commentaire:</label>
+            <textarea id="comment" name="comment"></textarea>
+            <button type="submit"><span>Soumettre</span></button>
+        </form>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const roomId = urlParams.get('roomId');
+            const editCommentId = urlParams.get('edit');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+            // Vérifier si l'utilisateur est connecté
+            if (!currentUser) {
+                alert('Veuillez vous connecter pour soumettre un commentaire.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Remplir les champs avec les informations de l'utilisateur
+            document.getElementById('name').value = currentUser.nom || '';
+            document.getElementById('firstName').value = currentUser.prenom || '';
+
+            // Récupérer les détails de la chambre depuis localStorage
+            const selectedRoomId = localStorage.getItem('selectedRoomForCommentId');
+            const selectedRoomNumber = localStorage.getItem('selectedRoomForCommentNumber');
+            const selectedRoomPrice = localStorage.getItem('selectedRoomForCommentPrice');
+            const selectedRoomDetails = localStorage.getItem('selectedRoomForCommentDetails');
+
+            // Vérifier si les informations de la chambre sont disponibles
+            //if (!selectedRoomId || !selectedRoomNumber || !selectedRoomPrice || !selectedRoomDetails) {
+            //    alert('Informations de la chambre non trouvées.');
+             //   window.location.href = 'chambres.html';
+            //    return;
+            //}
+
+            // Afficher les détails de la chambre
+            document.getElementById('roomNumber').textContent = selectedRoomNumber;
+            document.getElementById('roomPrice').textContent = selectedRoomPrice;
+            document.getElementById('roomDetails').textContent = selectedRoomDetails;
+
+            // Générer ou récupérer le numéro de client
+            let comments = JSON.parse(localStorage.getItem('comments') || '[]');
+            const roomComments = comments.filter(c => c.roomId === selectedRoomId);
+            const clientNumber = roomComments.length + 1;
+            document.getElementById('clientNumber').value = clientNumber;
+
+            // Pré-remplir le formulaire si modification
+            if (editCommentId) {
+                const comment = comments.find(c => c.commentId == editCommentId);
+                if (comment) {
+                    document.getElementById('roomState').value = comment.ratings.roomState;
+                    document.getElementById('quality').value = comment.ratings.quality;
+                    document.getElementById('bedState').value = comment.ratings.bedState;
+                    document.getElementById('comment').value = comment.comment;
+                }
+            }
+
+            // Animation de soumission
+            const submitButton = document.querySelector('button[type="submit"]');
+            const form = document.getElementById('commentForm');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitButton.classList.add('loading');
+                submitButton.disabled = true;
+
+                // Simuler un léger délai pour l'animation
+                setTimeout(() => {
+                    try {
+                        const name = document.getElementById('name').value;
+                        const firstName = document.getElementById('firstName').value;
+                        const roomState = document.getElementById('roomState').value;
+                        const quality = document.getElementById('quality').value;
+                        const bedState = document.getElementById('bedState').value;
+                        const commentText = document.getElementById('comment').value;
+
+                        if (editCommentId) {
+                            // Mise à jour du commentaire existant
+                            comments = comments.map(c => {
+                                if (c.commentId == editCommentId) {
+                                    return {
+                                        ...c,
+                                        ratings: {
+                                            roomState: parseInt(roomState),
+                                            quality: parseInt(quality),
+                                            bedState: parseInt(bedState)
+                                        },
+                                        comment: commentText,
+                                        timestamp: new Date().toISOString()
+                                    };
+                                }
+                                return c;
+                            });
+                        } else {
+                            // Créer un nouveau commentaire
+                            const newComment = {
+                                commentId: comments.length + 1,
+                                roomId: selectedRoomId,
+                                name: name,
+                                firstName: firstName,
+                                email: currentUser.email,
+                                ratings: {
+                                    roomState: parseInt(roomState),
+                                    quality: parseInt(quality),
+                                    bedState: parseInt(bedState)
+                                },
+                                comment: commentText,
+                                timestamp: new Date().toISOString()
+                            };
+                            comments.push(newComment);
+                        }
+
+                        // Sauvegarder les commentaires
+                        localStorage.setItem('comments', JSON.stringify(comments));
+
+                        // Nettoyer les données temporaires
+                        localStorage.removeItem('selectedRoomForCommentId');
+                        localStorage.removeItem('selectedRoomForCommentNumber');
+                        localStorage.removeItem('selectedRoomForCommentPrice');
+                        localStorage.removeItem('selectedRoomForCommentDetails');
+                        localStorage.removeItem('editingCommentId');
+
+                        // Rediriger vers commentaire.html avec le roomId
+                        window.location.href = `commentair.html?roomId=${selectedRoomId}`;
+                    } catch (error) {
+                        console.error('Erreur lors de la soumission du commentaire:', error);
+                        alert('Une erreur est survenue lors de la soumission du commentaire. Veuillez réessayer.');
+                        submitButton.classList.remove('loading');
+                        submitButton.disabled = false;
+                    }
+                }, 1000); // Délai de 1 seconde pour l'animation
+            });
+        });
+    </script>
+</body>
+</html>

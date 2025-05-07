@@ -1,0 +1,138 @@
+<!-- Structure de base du site -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location de Chambres & Guest Houses</title>
+    <link rel="stylesheet" href="sty1.css">
+</head>
+<body>
+    <header>
+        <h1>Bienvenue sur notre site de location</h1>
+        <button class="menu-toggle">☰ Menu</button>
+        <nav>
+            <ul>
+                <li><a href="cahier1.html" class="ac">Accueil</a></li>
+                <li><a href="chambres.html" class="acc">Chambres à Louer</a></li>
+                <li><a href="gesthourse.html" class="acc">Guest Houses</a></li>
+                <li><a href="reservations.html" class="acc">Réserver</a></li>
+                <li><a href="blog.html" class="acc">Blog</a></li>
+                <li><a href="about.html" class="acc">À propos</a></li>
+                <li><a href="contact.html" class="acc">Contact</a></li>
+                <li><a href="login.html" class="acc">Connexion</a></li>
+                <li><a href="admin.html" class="acc" id="adminLink" >Administration</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <div class="banner">
+        <p class="tro">Trouvez l'hébergement parfait au Bénin !</p>
+    </div>
+    
+    <main>
+        <section class="offers">
+            <div class="offer-card">
+                <img src="cham1.jpeg" alt="Chambre Luxe">
+                <h3>Chambre Luxe</h3>
+                <p>À partir de 25 000 FCFA/nuit</p>
+            </div>
+            <div class="offer-card">
+                <img src="me6.jpg" alt="Guest House Confort">
+                <h3>Guest House Confort</h3>
+                <p>À partir de 30 000 FCFA/nuit</p>
+            </div>
+            <div class="offer-card">
+                <img src="cham3.jpeg" alt="Chambre Économique">
+                <h3>Chambre Économique</h3>
+                <p>À partir de 15 000 FCFA/nuit</p>
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 - Location de Chambres & Guest Houses au Bénin</p>
+    </footer>
+    <script>
+        const phrase = "Trouvé l'hébergement parfait au Bénin !";
+        const textElement = document.querySelector(".tro");
+      
+        let index = 0;
+        let chunk = 0;
+        const chunkSize = Math.ceil(phrase.length / 3);
+      
+        function animateText() {
+          if (chunk < 3) {
+            const end = Math.min((chunk + 1) * chunkSize, phrase.length);
+            if (index < end) {
+              const char = phrase[index];
+              textElement.innerHTML += char;
+              index++;
+              setTimeout(animateText, 150);
+            } else {
+              chunk++;
+              setTimeout(animateText, 300);
+            }
+          } else {
+            setTimeout(() => {
+              textElement.innerHTML = "";
+              index = 0;
+              chunk = 0;
+              startAnimation(); // recommencer
+            }, 1500);
+          }
+        }
+      
+        function startAnimation() {
+          textElement.innerHTML = phrase[0]; // Affiche uniquement "T"
+          index = 1; // Commencer à partir du 2e caractère
+          chunk = 0;
+          setTimeout(animateText, 400);
+        }
+      
+        startAnimation();
+    </script>
+      
+      
+      
+    <script src="scripts/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Vérifier si l'utilisateur est connecté et est un administrateur
+            const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+            const adminLink = document.getElementById('adminLink');
+            
+            if (currentUser && currentUser.isAdmin) {
+                adminLink.style.display = 'block';
+            } else {
+                adminLink.style.display = 'none';
+            }
+            const menuToggle = document.querySelector(".menu-toggle");
+            const navMenu = document.querySelector("nav ul");
+
+            // Gestion de l'ouverture et de la fermeture du menu
+            menuToggle.addEventListener("click", function () {
+                navMenu.classList.toggle("active");
+            });
+
+            // Empêcher le menu de se cacher lorsque le curseur quitte la nav-bar
+            let isMouseOverMenu = false;
+
+            navMenu.addEventListener("mouseenter", function () {
+                isMouseOverMenu = true; // Le curseur est sur le menu
+            });
+
+            navMenu.addEventListener("mouseleave", function () {
+                isMouseOverMenu = false; // Le curseur quitte le menu
+            });
+
+            document.addEventListener("click", function (event) {
+                // Fermer le menu uniquement si le clic est en dehors du menu et du bouton
+                if (!navMenu.contains(event.target) && !menuToggle.contains(event.target) && !isMouseOverMenu) {
+                    navMenu.classList.remove("active");
+                }
+            });
+        });
+    </script>
+</body>
+</html>
